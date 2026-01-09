@@ -1,0 +1,15 @@
+abstract class ForgotPasswordState {}
+
+class ForgotPasswordInitial extends ForgotPasswordState {}
+
+class ForgotPasswordSubmitting extends ForgotPasswordState {}
+
+class ForgotPasswordSuccess extends ForgotPasswordState {
+  final String message;
+  ForgotPasswordSuccess(this.message);
+}
+
+class ForgotPasswordFailure extends ForgotPasswordState {
+  final String message;
+  ForgotPasswordFailure(this.message);
+}
