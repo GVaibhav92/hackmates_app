@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:app_links/app_links.dart';
 import '../../data/auth_repository.dart';
 
 import '../../bloc/auth_bloc.dart';
@@ -20,39 +19,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
-  final AppLinks _appLinks = AppLinks();
-  late final StreamSubscription<Uri> _sub;
-
-  @override
-  void initState() {
-    super.initState();
-    // AppLinks deep link listener
-    _sub = _appLinks.uriLinkStream.listen(
-          (Uri? uri) {
-        if (uri == null) {
-          return;
-        }
-
-        final key = uri.queryParameters['key'];
-        if (key == null) {
-          return;
-        }
-        context.read<AuthBloc>().add(
-          GoogleServerSideSignInComplete(key),
-        );
-      },
-      onError: (error) {
-      },
-    );
-  }
-
-  @override
-  void dispose() {
-    _sub.cancel();
-    _emailCtrl.dispose();
-    _passCtrl.dispose();
-    super.dispose();
-  }
 
   Future<void> _startServerSideGoogleFlow() async {
     final authRepo = context.read<AuthRepository>();

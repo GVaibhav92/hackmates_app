@@ -19,7 +19,7 @@ class PostModel {
 
   factory PostModel.fromMap(Map<String, dynamic> map) {
     return PostModel(
-      id: map['id'] as int,
+      id: map['id'] is int ? map['id'] as int : int.tryParse(map['id']?.toString() ?? '') ?? 0,
       title: map['title'] ?? '',
       description: map['description'] ?? '',
       category: map['category'] ?? '',

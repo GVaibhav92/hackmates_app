@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'go_router_refresh_stream.dart';
 
 import '../features/auth/bloc/auth_bloc.dart';
 import '../features/auth/bloc/auth_state.dart';
@@ -16,37 +17,57 @@ import '../features/auth/presentation/screens/feed_screen.dart';
 import '../features/apply/presentation/screens/quick_apply_screen.dart';
 import '../features/auth/presentation/screens/create_post_screen.dart';
 
+const _authRoutes = {
+  '/login',
+  '/signup',
+  '/forgot-password',
+  '/otp-verification',
+};
 
-final appRouter = GoRouter(
-  initialLocation: '/splash',
+const _protectedRoutes = {
+  '/feed',
+  '/create-post',
+  '/apply',
+};
 
-  // Redirect logic based on authentication state
-  redirect: (BuildContext context, GoRouterState state) {
-    final authBloc = context.read<AuthBloc>();
-    final authState = authBloc.state;
+GoRouter createAppRouter(AuthBloc authBloc) {
+  return GoRouter(
+    initialLocation: '/splash',
 
-    final isAuthenticated = authState is AuthAuthenticated;
-    final isLoading = authState is AuthLoading || authState is AuthInitial;
+    refreshListenable: GoRouterRefreshStream(
+      authBloc.stream,
+    ),
 
-    final currentPath = state.matchedLocation;
+    redirect: (context, state) {
+      final authState = authBloc.state;
 
-    // While checking auth status, stay on splash
-    if (isLoading) {
-      return currentPath == '/splash' ? null : '/splash';
-    }
+      final isAuthenticated = authState is AuthAuthenticated;
+      final isLoading = authState is AuthLoading || authState is AuthInitial;
 
-    // If authenticated and trying to access login/signup
-    if (isAuthenticated && (currentPath == '/login' || currentPath == '/signup')) {
-      return '/feed';
-    }
+      final location = state.matchedLocation;
 
-    // If authenticated and on splash, go to feed
-    if (isAuthenticated && currentPath == '/splash') {
-      return '/feed';
-    }
+      // While auth is resolving → stay on splash
+      if (isLoading) {
+        return location == '/splash' ? null : '/splash';
+      }
 
-    return null; // No redirect needed
-  },
+      // Block unauthenticated users from protected routes
+      if (!isAuthenticated && _protectedRoutes.contains(location)) {
+        return '/login';
+      }
+
+      // Block authenticated users from auth routes
+      if (isAuthenticated && _authRoutes.contains(location)) {
+        return '/feed';
+      }
+
+      // Authenticated users should not stay on splash
+      if (isAuthenticated && location == '/splash') {
+        return '/feed';
+      }
+
+      return null;
+    },
 
   routes: [
     // Splash Screen
@@ -114,11 +135,8 @@ final appRouter = GoRouter(
 
         if (key != null && key.isNotEmpty) {
           context.read<AuthBloc>().add(GoogleServerSideSignInComplete(key));
-          debugPrint('OAuth callback received with key: $key');
         } else {
-          debugPrint('OAuth callback received but no key found');
         }
-
         return const SplashScreen();
       },
     ),
@@ -128,13 +146,10 @@ final appRouter = GoRouter(
       path: '/verified',
       name: 'verified',
       builder: (context, state) {
-        debugPrint('🔗 /verified route hit');
-        debugPrint('🔗 Query params: ${state.uri.queryParameters}');
 
         final token = state.uri.queryParameters['token'];
 
         if (token != null && token.isNotEmpty) {
-          debugPrint('✅ Token found in /verified route: ${token.substring(0, 20)}...');
 
           Future.microtask(() {
             context.read<AuthBloc>().add(
@@ -154,11 +169,9 @@ final appRouter = GoRouter(
                 ),
               );
             } catch (e) {
-              debugPrint('⚠️ Could not show snackbar: $e');
             }
           });
         } else {
-          debugPrint('❌ No token in /verified route');
           Future.microtask(() {
             context.go('/signup');
           });
@@ -259,3 +272,4 @@ final appRouter = GoRouter(
     ),
   ),
 );
+}

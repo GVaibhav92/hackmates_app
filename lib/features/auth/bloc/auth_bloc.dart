@@ -6,6 +6,7 @@ import 'auth_state.dart';
 
 //EVENT HANDLERS
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
+
   AuthBloc({required this.authRepository}) : super(AuthInitial()) {
     on<AuthStarted>(_onStarted);
     on<EmailLoginRequested>(_onEmailLogin);

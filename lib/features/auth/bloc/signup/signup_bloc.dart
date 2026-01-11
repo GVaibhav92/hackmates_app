@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
-import 'package:flutter/foundation.dart';
 import 'package:hackmates_app/features/auth/data/auth_repository.dart';
 import 'package:hackmates_app/features/auth/bloc/auth_bloc.dart';
 import 'package:hackmates_app/features/auth/bloc/auth_event.dart';

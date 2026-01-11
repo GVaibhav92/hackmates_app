@@ -25,47 +25,53 @@ class HackmatesApp extends StatefulWidget {
 class _HackmatesAppState extends State<HackmatesApp> {
   final _baseUrl = 'https://uncookable-annelle-combatable.ngrok-free.dev';
 
+  late final AuthRepository _authRepository;
+  late final FeedRepository _feedRepository;
+
+  @override
+  void initState() {
+    super.initState();
+    _authRepository = AuthRepository(baseUrl: _baseUrl);
+    _feedRepository = FeedRepository(
+      baseUrl: _baseUrl,
+      authRepository: _authRepository,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final authRepo = AuthRepository(baseUrl: _baseUrl);
-
     return MultiRepositoryProvider(
       providers: [
-        RepositoryProvider<AuthRepository>.value(
-          value: authRepo,
-        ),
-        RepositoryProvider<FeedRepository>(
-          create: (context) =>
-              FeedRepository(
-                baseUrl: authRepo.baseUrl,
-                authRepository: authRepo,
-              ),
-        ),
+        RepositoryProvider.value(value: _authRepository),
+        RepositoryProvider.value(value: _feedRepository),
       ],
       child: MultiBlocProvider(
         providers: [
           BlocProvider(
-            create: (context) => AuthBloc(authRepository: authRepo),
+            create: (_) => AuthBloc(authRepository: _authRepository),
           ),
           BlocProvider(
             create: (context) => SignupBloc(
-              authRepository: authRepo,
+              authRepository: _authRepository,
               authBloc: context.read<AuthBloc>(),
             ),
           ),
           BlocProvider(
             create: (context) =>
-            FeedBloc(
-              context.read<FeedRepository>(),
-            )
+            FeedBloc(context.read<FeedRepository>())
               ..add(FetchFeed()),
           ),
         ],
-        child: MaterialApp.router(
-          title: 'Hackmates',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
-          routerConfig: appRouter,
+        child: Builder(
+          builder: (context) {
+            final authBloc = context.read<AuthBloc>();
+            return MaterialApp.router(
+              title: 'Hackmates',
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.lightTheme,
+              routerConfig: createAppRouter(authBloc),
+            );
+          },
         ),
       ),
     );
